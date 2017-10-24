@@ -1,6 +1,5 @@
 import sys
 import pickle
-#sys.path.append('/root/opencv/build/lib')
 import cv2
 import tensorflow as tf
 import sklearn 
@@ -8,7 +7,6 @@ import scipy
 import glob
 import numpy as np
 import cPickle
-#from lxml import etree
 from PIL import Image
 from keras.applications.vgg16 import VGG16
 from sklearn.ensemble import RandomForestClassifier
@@ -21,7 +19,6 @@ from sklearn.datasets import make_classification
 from sklearn.mixture import GMM
 
 
-#img_path = '/home/sukhad/torch-feature-extract/images/1_4.jpg'
 def fisher_vector(xx, gmm):
     xx = np.atleast_2d(xx)
     N = xx.shape[0]
@@ -48,14 +45,9 @@ def fisher_vector(xx, gmm):
 
 if __name__=='__main__':
     model = VGG16(weights='imagenet', include_top=False)
-    with open('model1.pk2','rb') as fid:
-        loaded = cPickle.load(fid)  
-    print "loaded"
     video = cv2.VideoCapture('/root/Downloads/abc.mp4')
     frame,src = video.read()
     x = src.shape
-    #fourcc = cv2.cv.FOURCC(*'XVID')
-    #fourcc = cv2.VideoWriter_fourcc(*'MP4V')
     fourcc = cv2.VideoWriter_fourcc('M', 'J', 'P', 'G')
     out = cv2.VideoWriter('output.avi',fourcc, 20.0, (x[1],x[0]))
     while(True):
@@ -70,11 +62,8 @@ if __name__=='__main__':
         kernel = np.ones((5,5), np.uint8)
         img_dilation = cv2.dilate(edges, kernel, iterations=2)
         _, contours, _= cv2.findContours(img_dilation, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-        X = []
         i = 0
         for cnt in contours:
-           # print "i"
-           # print i
             check =[]
             x,y,w,h = cv2.boundingRect(cnt)
             area = cv2.contourArea(cnt)
@@ -87,16 +76,15 @@ if __name__=='__main__':
                 features = model.predict(x1)
                 features = features.reshape(1,512)
                 features = features.tolist()
-                X.append(features[0])
-                gmm = pickle.load(open('gmm_model1.pk2', 'rb'))
-                fv=fisher_vector(X[i],gmm)
-                fv = fv.reshape(1,-1)
-        a = loaded.predict(fv)
+                X = features[0]
+                X = np.array(X)
+                final = (X.transpose()).dot(X)
+                final = final.reshape(1,final.shape[0]*final.shape[1])
+                a = loaded_classifier.predict(fv)
                 print a
-                abc = src
                 if(a==1):
-                    abc = cv2.rectangle(abc,(x,y),(x+w,y+h),(0,255,0),2)
+                    src = cv2.rectangle(src,(x,y),(x+w,y+h),(0,255,0),2)
                 i = i + 1
-        out.write(abc)
-    cv2.waitKey(10)
+        out.write(src)
+        cv2.waitKey(10)
         print "done"
